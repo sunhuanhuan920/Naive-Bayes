@@ -11,6 +11,7 @@
 import pandas as pd
 import numpy as np
 from naive_bayes import BernoulliNB as myBernoulliNB
+from naive_bayes import MultinomialNB as myMultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB, MultinomialNB, GaussianNB
 from sklearn.metrics import accuracy_score
@@ -45,6 +46,12 @@ mnb.fit(X_train, y_train)
 y_predict_mnb = mnb.predict(X_test)
 print("Accuracy Score for Multinomial Naive Bayes (scikit-learn implementation): ", 
         accuracy_score(y_predict_mnb, y_test))
+# my implementation of bernoulli naive bayes classifier
+my_mnb = myMultinomialNB()
+my_mnb.fit(X_train, y_train)
+y_predict_my_mnb = my_mnb.predict(X_test)
+print("Accuracy Score for Multinomial Naive Bayes (my implementation): ", 
+        accuracy_score(y_predict_my_mnb, y_test))
 print("\n")
 
 # scikit-learn gaussian naive bayes classifier

@@ -16,7 +16,7 @@ class BernoulliNB():
         # that data consist of binary values
         X = self._binarize(X)
 
-        # separate X by classes(different target)
+        # separate training data by classes(different target)
         X_separated_by_class = [[x for x, t in zip(X, y) if t == c] for c in np.unique(y)]
 
         # number of different class
@@ -57,8 +57,8 @@ class BernoulliNB():
         posterior_prob = posterior_prob_numerator - posterior_prob_denominator
 
         # alternative solution
-        # since posterior_pronb_denominator is a constant thus we don't bother compute the denominator
-        # compute the numerator is sufficient enough to make also it makes algorithm runs faster
+        # since posterior_prob_denominator is a constant thus we don't bother compute the denominator
+        # compute the numerator is sufficient enough to make prediction and also it makes algorithm runs faster
         #return np.argmax(posterior_prob_numerator, axis=1)
 
         return np.argmax(posterior_prob, axis=1)
@@ -66,6 +66,51 @@ class BernoulliNB():
     def _binarize(self, X):
         # convert the values in X to binary values (0 or 1)
         return np.where(X > self.binarize, 1, 0)
+
+class MultinomialNB():
+    def __init__(self, k=1.0):
+        # Laplace Smoothing Factor
+        self.K = k
+
+    def fit(self, X, y):
+        # separate the training data by class
+        X_separated_by_class = [[x for x, t in zip(X, y) if t == c] for c in np.unique(y)]
+        
+        # number of different class
+        self.n_classes = len(np.unique(y))
+
+        # count the number of examples that belong to different classes
+        prior_numerator = [len(x) for x in X_separated_by_class]
+
+        # count the total number of examples in the training set
+        prior_denominator = X.shape[0]
+
+        # compute prior probability
+        self.prior_prob = np.array(prior_numerator) / prior_denominator
+
+        # compute log prior probability for prediction
+        self.log_prior_prob = np.log(self.prior_prob)
+
+        # compute the conditional probability's numerator for different class (with laplace smoothing)
+        conditional_prob_numerator = np.array([np.array(x).sum(axis=0) + self.K for x in X_separated_by_class])
+
+        # compute the conditional probability's denominator for different class (with laplace smoothing)
+        conditional_prob_denominator = np.expand_dims(conditional_prob_numerator.sum(axis=1) + self.n_classes * self.K, axis=1)
+
+        # compute the conditional probability for each feature and for each different classes
+        self.conditional_prob = conditional_prob_numerator / conditional_prob_denominator
+
+        return self
+
+    def predict(self, X):
+        # compute the log conditional probability for each examples and for each different classes
+        log_conditional_prob = np.array([(x * np.log(self.conditional_prob)).sum(axis=1) for x in X])
+
+        # compute the posterior probability
+        posterior_pronb = log_conditional_prob + self.log_prior_prob
+
+        # make prediction
+        return np.argmax(posterior_pronb, axis=1)
 
 # read csv file
 df = pd.read_csv("./Data/emails.csv")
@@ -77,7 +122,7 @@ y = df.iloc[:, 3001].values
 # split data set to training set and test set
 X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-# bnb = BernoulliNB()
+# bnb = MultinomialNB()
 # bnb.fit(X_train, y_train)
-# print(bnb.log_prior_prob)
-# y_predict = bnb.predict(X_test)
+# print(bnb.conditional_prob.shape)
+#y_predict = bnb.predict(X_test)

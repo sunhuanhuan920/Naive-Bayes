@@ -43,7 +43,7 @@ class BernoulliNB():
         # compute the conditional probability
         # with laplace smoothing we assume we have seen each feature at least self.K times
         conditional_prob_numerator = np.array([np.array(x).sum(axis=0) + self.K for x in X_separated_by_class])
-        conditional_prob_denominator = np.expand_dims(np.array([len(x) + self.n_classes * self.K for x in X_separated_by_class]), axis=1)
+        conditional_prob_denominator = np.expand_dims(np.array([len(x) + 2 * self.K for x in X_separated_by_class]), axis=1)
         self.conditional_prob = conditional_prob_numerator / conditional_prob_denominator
 
         return self

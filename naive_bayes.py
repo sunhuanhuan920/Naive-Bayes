@@ -112,17 +112,71 @@ class MultinomialNB():
         # make prediction
         return np.argmax(posterior_pronb, axis=1)
 
+class GaussianNB():
+    def __init__(self):
+        pass
+
+    def fit(self, X, y):
+        # separate the training set by classes
+        X_separated_by_class = [[x for x, t in zip(X, y) if t == c] for c in np.unique(y)]
+
+        # compute prior probability
+        self.prior_prob = np.array([len(x) / X.shape[0] for x in X_separated_by_class])
+
+        # compute mean vector for each classes
+        self.mean_vector = np.array([np.array(x).sum(axis=0) / len(x) for x in X_separated_by_class])
+
+        # compute covariance matrix for each class
+        covariance_matrices = []
+        for c, x in enumerate(X_separated_by_class):
+            mean_square_difference = 0
+            for x_i in x:
+                mean_difference = np.expand_dims((x_i - self.mean_vector[c]), axis=1)
+                mean_square_difference += mean_difference.dot(mean_difference.T) 
+            covariance_matrix = mean_square_difference / len(x)
+            covariance_matrices.append(covariance_matrix)
+        self.covariance_matrices = np.asarray(covariance_matrices)
+
+        return self
+
+    def log_gaussian_distribution(self, x, mean, variance):
+
+        log_multiplier = -np.log(np.sqrt((2 * np.pi) * variance))
+        log_exponent = -(x - mean)**2 / (2 * variance)
+
+        return sum(log_multiplier + log_exponent)
+
+    def predict(self, X):
+        variances = []
+        for matrix in self.covariance_matrices:
+            variance = matrix.diagonal() + 1e-20
+            variances.append(variance)
+        variances = np.array(variances)
+        
+        # list that stores all test data's posterior probability
+        posterior_prob_collection = []
+        for x in X:
+            conditional_prob = []
+            for mean, variance in zip(self.mean_vector, variances):
+                # compute conditional probability for each class
+                conditional_prob.append(self.log_gaussian_distribution(x, mean, variance))
+            posterior_prob = np.array(conditional_prob) + np.log(self.prior_prob)
+            posterior_prob_collection.append(posterior_prob)
+        posterior_prob_collection = np.array(posterior_prob_collection)
+        
+        return np.argmax(posterior_prob_collection, axis=1)
+
 # read csv file
-df = pd.read_csv("./Data/emails.csv")
+# df = pd.read_csv("./Data/emails.csv")
 
-# separate X and y from data frame
-X = np.array(df.iloc[:, 1:3001])
-y = df.iloc[:, 3001].values
+# # separate X and y from data frame
+# X = np.array(df.iloc[:, 1:3001])
+# y = df.iloc[:, 3001].values
 
-# split data set to training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y)
+# # split data set to training set and test set
+# X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-# bnb = MultinomialNB()
+# bnb = GaussianNB()
 # bnb.fit(X_train, y_train)
-# print(bnb.conditional_prob.shape)
-#y_predict = bnb.predict(X_test)
+# #print(bnb.mean_vector.shape)
+# y_predict = bnb.predict(X_test)

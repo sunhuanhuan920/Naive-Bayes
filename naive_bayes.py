@@ -1,6 +1,12 @@
+"""
+    Naive Bayes Class
+        - Bernoulli Naive Bayes
+        - Multinomial Naive Bayes
+        - Gaussian Naive Bayes
+    Arthor: Zhenhuan(Steven) Sun
+"""
+
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
 
 class BernoulliNB():
     def __init__(self, k=1.0, binarize=0.0):
@@ -92,10 +98,11 @@ class MultinomialNB():
         self.log_prior_prob = np.log(self.prior_prob)
 
         # compute the conditional probability's numerator for different class (with laplace smoothing)
+        # assume we have seen each feature at least once to avoid divide by zero error
         conditional_prob_numerator = np.array([np.array(x).sum(axis=0) + self.K for x in X_separated_by_class])
 
-        # compute the conditional probability's denominator for different class (with laplace smoothing)
-        conditional_prob_denominator = np.expand_dims(conditional_prob_numerator.sum(axis=1) + self.n_classes * self.K, axis=1)
+        # compute the conditional probability's denominator for different class
+        conditional_prob_denominator = np.expand_dims(conditional_prob_numerator.sum(axis=1), axis=1)
 
         # compute the conditional probability for each feature and for each different classes
         self.conditional_prob = conditional_prob_numerator / conditional_prob_denominator
@@ -141,10 +148,10 @@ class GaussianNB():
                 # compute the diagnal entries of covariance matrix for each examples (much faster than above method)
                 mean_difference = x_i - self.mean_vector[c]
                 mean_square_difference += mean_difference ** 2
-            # convert the list of diagonal entries back to covariance diagonal matrix (with laplace smoothing)
-            # here we increase the variance of each feature by self.K to make sure there is no zero variance
-            # and thus we won't encounter divide by zero error in the future
-            covariance_diagonal_matrix = ((mean_square_difference + self.K) / (len(x))) * np.identity(X.shape[1])
+            # convert the list of diagonal entries back to covariance diagonal matrix
+            # here we assumed that the mean square difference between each feature and its mean is at least 1 to make sure that 
+            # there is no zero variance in the covariance matrix and thus we won't encounter divide by zero error in the future
+            covariance_diagonal_matrix = ((mean_square_difference + self.K) / len(x)) * np.identity(X.shape[1])
             covariance_diagonal_matrices.append(covariance_diagonal_matrix)
         self.covariance_diagonal_matrices = np.asarray(covariance_diagonal_matrices)
 
@@ -171,23 +178,9 @@ class GaussianNB():
             for mean, variance in zip(self.mean_vector, variances):
                 # compute conditional probability for each class
                 conditional_prob.append(self.log_gaussian_distribution(x, mean, variance))
+            # compute posterior probability
             posterior_prob = np.array(conditional_prob) + np.log(self.prior_prob)
             posterior_prob_collection.append(posterior_prob)
         posterior_prob_collection = np.array(posterior_prob_collection)
         
         return np.argmax(posterior_prob_collection, axis=1)
-
-# read csv file
-df = pd.read_csv("./Data/emails.csv")
-
-# separate X and y from data frame
-X = np.array(df.iloc[:, 1:3001])
-y = df.iloc[:, 3001].values
-
-# split data set to training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y)
-
-bnb = GaussianNB()
-bnb.fit(X_train, y_train)
-#print(bnb.mean_vector.shape)
-#y_predict = bnb.predict(X_test)

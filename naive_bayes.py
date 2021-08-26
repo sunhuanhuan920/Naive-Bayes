@@ -51,10 +51,15 @@ class BernoulliNB():
                                    np.abs(1 - x) * np.log(1 - self.conditional_prob)).sum(axis=1) + 
                                    self.log_prior_prob for x in X])
         posterior_prob_denominator = np.expand_dims(np.array([(x * np.log(self.conditional_prob) + 
-                                    np.abs(1 - x) * np.log(1 - self.conditional_prob)).sum(axis=1) + 
+                                    np.abs(1 - x) * np.log(1 - self.conditional_prob)).sum(axis=1) +
                                     self.log_prior_prob for x in X]).sum(axis=1), axis=1)
                                     
         posterior_prob = posterior_prob_numerator - posterior_prob_denominator
+
+        # alternative solution
+        # since posterior_pronb_denominator is a constant thus we don't bother compute the denominator
+        # compute the numerator is sufficient enough to make also it makes algorithm runs faster
+        #return np.argmax(posterior_prob_numerator, axis=1)
 
         return np.argmax(posterior_prob, axis=1)
 
@@ -72,7 +77,7 @@ y = df.iloc[:, 3001].values
 # split data set to training set and test set
 X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-bnb = BernoulliNB()
-print(X_train[:4, :])
-x = bnb._binarize(X_train)
-print(x[:4, :])
+# bnb = BernoulliNB()
+# bnb.fit(X_train, y_train)
+# print(bnb.log_prior_prob)
+# y_predict = bnb.predict(X_test)

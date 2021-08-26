@@ -113,29 +113,40 @@ class MultinomialNB():
         return np.argmax(posterior_pronb, axis=1)
 
 class GaussianNB():
-    def __init__(self):
-        pass
+    def __init__(self, k=1.0):
+        # Laplace Smoothing Factor
+        self.K = k
 
     def fit(self, X, y):
         # separate the training set by classes
         X_separated_by_class = [[x for x, t in zip(X, y) if t == c] for c in np.unique(y)]
 
+        # count the number of different classes
+        self.n_classes = len(np.unique(y))
+
         # compute prior probability
         self.prior_prob = np.array([len(x) / X.shape[0] for x in X_separated_by_class])
 
-        # compute mean vector for each classes
+        # compute mean vector for each class
         self.mean_vector = np.array([np.array(x).sum(axis=0) / len(x) for x in X_separated_by_class])
 
         # compute covariance matrix for each class
-        covariance_matrices = []
+        covariance_diagonal_matrices = []
         for c, x in enumerate(X_separated_by_class):
             mean_square_difference = 0
             for x_i in x:
-                mean_difference = np.expand_dims((x_i - self.mean_vector[c]), axis=1)
-                mean_square_difference += mean_difference.dot(mean_difference.T) 
-            covariance_matrix = mean_square_difference / len(x)
-            covariance_matrices.append(covariance_matrix)
-        self.covariance_matrices = np.asarray(covariance_matrices)
+                # compute the covariance matrix for each examples (slow as hell -> abandoned)
+                # mean_difference = np.expand_dims((x_i - self.mean_vector[c]), axis=1)
+                # mean_square_difference += mean_difference.dot(mean_difference.T) 
+                # compute the diagnal entries of covariance matrix for each examples (much faster than above method)
+                mean_difference = x_i - self.mean_vector[c]
+                mean_square_difference += mean_difference ** 2
+            # convert the list of diagonal entries back to covariance diagonal matrix (with laplace smoothing)
+            # here we increase the variance of each feature by self.K to make sure there is no zero variance
+            # and thus we won't encounter divide by zero error in the future
+            covariance_diagonal_matrix = ((mean_square_difference + self.K) / (len(x))) * np.identity(X.shape[1])
+            covariance_diagonal_matrices.append(covariance_diagonal_matrix)
+        self.covariance_diagonal_matrices = np.asarray(covariance_diagonal_matrices)
 
         return self
 
@@ -148,8 +159,8 @@ class GaussianNB():
 
     def predict(self, X):
         variances = []
-        for matrix in self.covariance_matrices:
-            variance = matrix.diagonal() + 1e-20
+        for matrix in self.covariance_diagonal_matrices:
+            variance = matrix.diagonal()
             variances.append(variance)
         variances = np.array(variances)
         
@@ -167,16 +178,16 @@ class GaussianNB():
         return np.argmax(posterior_prob_collection, axis=1)
 
 # read csv file
-# df = pd.read_csv("./Data/emails.csv")
+df = pd.read_csv("./Data/emails.csv")
 
-# # separate X and y from data frame
-# X = np.array(df.iloc[:, 1:3001])
-# y = df.iloc[:, 3001].values
+# separate X and y from data frame
+X = np.array(df.iloc[:, 1:3001])
+y = df.iloc[:, 3001].values
 
-# # split data set to training set and test set
-# X_train, X_test, y_train, y_test = train_test_split(X, y)
+# split data set to training set and test set
+X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-# bnb = GaussianNB()
-# bnb.fit(X_train, y_train)
-# #print(bnb.mean_vector.shape)
-# y_predict = bnb.predict(X_test)
+bnb = GaussianNB()
+bnb.fit(X_train, y_train)
+#print(bnb.mean_vector.shape)
+#y_predict = bnb.predict(X_test)

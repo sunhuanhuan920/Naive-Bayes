@@ -8,7 +8,7 @@
 
 import numpy as np
 
-class BernoulliNB():
+class BernoulliNB:
     def __init__(self, k=1.0, binarize=0.0):
         # Laplace Smoothing Factor
         self.K = k
@@ -73,7 +73,7 @@ class BernoulliNB():
         # convert the values in X to binary values (0 or 1)
         return np.where(X > self.binarize, 1, 0)
 
-class MultinomialNB():
+class MultinomialNB:
     def __init__(self, k=1.0):
         # Laplace Smoothing Factor
         self.K = k
@@ -119,7 +119,7 @@ class MultinomialNB():
         # make prediction
         return np.argmax(posterior_pronb, axis=1)
 
-class GaussianNB():
+class GaussianNB:
     def __init__(self, k=1.0):
         # Laplace Smoothing Factor
         self.K = k
